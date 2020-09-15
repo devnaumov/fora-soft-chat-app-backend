@@ -13,7 +13,10 @@ router.get("/", async (req: Request, res: Response) => {
 
 router.get("/:id", async (req: Request, res: Response) => {
   try {
-    const chat = await DI.chatRepository.findOne(req.params.id, ["users"]);
+    const chat = await DI.chatRepository.findOne(req.params.id, [
+      "users",
+      "messages",
+    ]);
 
     if (!chat) {
       return res.status(404).json({ message: "Chat not found" });
@@ -26,14 +29,16 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 router.post("/", async (req: Request, res: Response) => {
-  if (!req.body.name || !req.body.adminId) {
+  if (!req.body.name) {
     res.status(400);
     return res.json({ message: "One of `name, admin` is missing" });
   }
 
   try {
-    const chat = new Chat(req.body.name, req.body.adminId);
-    wrap(chat).assign(req.body);
+    const chat = new Chat(req.body.name, req?.session?.userId);
+    console.log(req?.session?.userId);
+
+    wrap(chat).assign(req.body, req?.session?.userId);
 
     DI.chatRepository.persistLater(chat);
     chat.users.add(chat.admin);

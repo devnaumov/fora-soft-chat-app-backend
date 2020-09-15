@@ -53,12 +53,16 @@ var express_session_1 = __importDefault(require("express-session"));
 var connect_mongo_1 = __importDefault(require("connect-mongo"));
 var socket_io_1 = __importDefault(require("socket.io"));
 var http_1 = __importDefault(require("http"));
+var Message_1 = require("./entities/Message");
+var message_controller_1 = require("./controllers/message.controller");
+var cors_1 = __importDefault(require("cors"));
 exports.DI = {};
 var app = express_1.default();
 var server = http_1.default.createServer(app);
 var port = process.env.PORT || 3000;
+var io = socket_io_1.default(server);
 (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, io_1, MongoStore, e_1;
+    var _a, MongoStore, e_1;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -70,9 +74,14 @@ var port = process.env.PORT || 3000;
                 exports.DI.em = exports.DI.orm.em;
                 exports.DI.chatRepository = exports.DI.orm.em.getRepository(Chat_1.Chat);
                 exports.DI.userRepository = exports.DI.orm.em.getRepository(entities_1.User);
-                io_1 = socket_io_1.default(server);
+                exports.DI.messageRepository = exports.DI.orm.em.getRepository(Message_1.Message);
                 MongoStore = connect_mongo_1.default(express_session_1.default);
+                app.use(cors_1.default());
                 app.use(express_1.default.json());
+                app.use(function (req, res, next) {
+                    req.io = io;
+                    next();
+                });
                 app.use(express_session_1.default({
                     store: new MongoStore({
                         url: exports.DI.em.getDriver().getConnection().getClientUrl() + "/chat-app",
@@ -96,13 +105,14 @@ var port = process.env.PORT || 3000;
                 });
                 app.use("/chat", controllers_1.ChatController);
                 app.use("/user", user_controller_1.UserController);
-                io_1.on("connection", function (socket) {
+                app.use("/message", message_controller_1.MessageController);
+                io.on("connection", function (socket) {
                     console.log("user connectet");
                     socket.on("disconnect", function () {
                         console.log("user disconnected");
                     });
                     socket.on("chat message", function (msg) {
-                        io_1.emit("chat message", msg);
+                        io.emit("chat message", msg);
                         console.log("message: " + msg);
                     });
                 });

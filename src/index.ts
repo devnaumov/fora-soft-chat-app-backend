@@ -4,30 +4,34 @@ import {
   EntityManager,
   EntityRepository,
   RequestContext,
-  InitOptions,
 } from "@mikro-orm/core";
 import { __prod__ } from "./constants";
 import { Chat } from "./entities/Chat";
 import microConfig from "./mikro-orm.config";
-import express, { Request } from "express";
+import express from "express";
 import { ChatController } from "./controllers";
 import { User } from "./entities";
 import { UserController } from "./controllers/user.controller";
 import session from "express-session";
 import connectMongo from "connect-mongo";
-import socket, { Socket } from "socket.io";
+import socket from "socket.io";
 import http from "http";
+import { Message } from "./entities/Message";
+import { MessageController } from "./controllers/message.controller";
+import cors from "cors";
 
 export const DI = {} as {
   orm: MikroORM;
   em: EntityManager;
   chatRepository: EntityRepository<Chat>;
   userRepository: EntityRepository<User>;
+  messageRepository: EntityRepository<Message>;
 };
 
 const app = express();
 const server = http.createServer(app);
 const port = process.env.PORT || 3000;
+const io = socket(server);
 
 (async () => {
   try {
@@ -35,11 +39,17 @@ const port = process.env.PORT || 3000;
     DI.em = DI.orm.em;
     DI.chatRepository = DI.orm.em.getRepository(Chat);
     DI.userRepository = DI.orm.em.getRepository(User);
+    DI.messageRepository = DI.orm.em.getRepository(Message);
 
-    const io = socket(server);
     const MongoStore = connectMongo(session);
+
+    app.use(cors());
     app.use(express.json());
 
+    app.use((req, res, next) => {
+      req.io = io;
+      next();
+    });
     app.use(
       session({
         store: new MongoStore({
@@ -67,6 +77,7 @@ const port = process.env.PORT || 3000;
     );
     app.use("/chat", ChatController);
     app.use("/user", UserController);
+    app.use("/message", MessageController);
 
     io.on("connection", (socket) => {
       console.log("user connectet");

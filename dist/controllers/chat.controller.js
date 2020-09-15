@@ -63,7 +63,10 @@ router.get("/:id", function (req, res) { return __awaiter(void 0, void 0, void 0
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
-                return [4 /*yield*/, __1.DI.chatRepository.findOne(req.params.id, ["users"])];
+                return [4 /*yield*/, __1.DI.chatRepository.findOne(req.params.id, [
+                        "users",
+                        "messages",
+                    ])];
             case 1:
                 chat = _a.sent();
                 if (!chat) {
@@ -80,14 +83,16 @@ router.get("/:id", function (req, res) { return __awaiter(void 0, void 0, void 0
 }); });
 router.post("/", function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     var chat;
-    return __generator(this, function (_a) {
-        if (!req.body.name || !req.body.adminId) {
+    var _a, _b, _c;
+    return __generator(this, function (_d) {
+        if (!req.body.name) {
             res.status(400);
             return [2 /*return*/, res.json({ message: "One of `name, admin` is missing" })];
         }
         try {
-            chat = new entities_1.Chat(req.body.name, req.body.adminId);
-            core_1.wrap(chat).assign(req.body);
+            chat = new entities_1.Chat(req.body.name, (_a = req === null || req === void 0 ? void 0 : req.session) === null || _a === void 0 ? void 0 : _a.userId);
+            console.log((_b = req === null || req === void 0 ? void 0 : req.session) === null || _b === void 0 ? void 0 : _b.userId);
+            core_1.wrap(chat).assign(req.body, (_c = req === null || req === void 0 ? void 0 : req.session) === null || _c === void 0 ? void 0 : _c.userId);
             __1.DI.chatRepository.persistLater(chat);
             chat.users.add(chat.admin);
             __1.DI.chatRepository.flush();
